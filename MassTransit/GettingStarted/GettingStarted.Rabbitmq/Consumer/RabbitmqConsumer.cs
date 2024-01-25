@@ -18,7 +18,7 @@ namespace GettingStarted.Rabbitmq.Consumer
         }
         public Task Consume(ConsumeContext<RabbitMqContract> context)
         {
-            logger.LogInformation(context.Message.Text);
+            logger.LogWarning($"First Consumer consumed message {context.Message.Text}");
             return Task.CompletedTask;
         }
     }

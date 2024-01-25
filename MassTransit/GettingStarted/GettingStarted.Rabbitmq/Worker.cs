@@ -1,5 +1,6 @@
 ﻿using MassTransit;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,19 +13,34 @@ namespace GettingStarted.Rabbitmq
     public class Worker : BackgroundService
     {
         private readonly IBus bus;
+        private readonly ILogger<Worker> logger;
+        private readonly ISendEndpointProvider sendEnpointProvider;
 
-        public Worker(IBus bus)
+        public Worker(IBus bus, ILogger<Worker> logger, ISendEndpointProvider sendEnpointProvider)
         {
             this.bus = bus;
+            this.logger = logger;
+            this.sendEnpointProvider = sendEnpointProvider;
         }
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                await bus.Publish(new RabbitMqContract
+                var text = $"Text: {DateTime.Now}";
+                /*await bus.Publish(new RabbitMqContract
                 {
-                    Text = $"Text: {DateTime.Now}"
-                });
+                    Text = text
+                });*/
+
+                var endpoint = await sendEnpointProvider.GetSendEndpoint(new Uri("queue:another-queue"));
+
+                await endpoint.Send(new RabbitMqContract
+                {
+                    Text = text
+                }, stoppingToken);
+
+                logger.LogCritical($"Worker sended: {text}");
+
                 await Task.Delay(1000);
             }
         }
